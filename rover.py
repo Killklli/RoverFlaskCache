@@ -6,12 +6,11 @@ from collections import defaultdict
 
 import requests
 from bs4 import BeautifulSoup
+from dateutil import parser
 
 
 def login(username, password, session: requests.Session(), org):
     """Log into the Rover Website."""
-    # Make sure we clear our cookies if we're signing back in
-    session.cookies.clear()
     # Load the login page and parse it into usable data
     page = session.get("https://spotteddogtech.com/" + org + "/login.aspx?ReturnUrl=%2f" + org + "%2fHome.aspx")
     soup = BeautifulSoup(page.content, features="html.parser")
@@ -93,3 +92,19 @@ def etree_to_dict(t):
             d[t.tag] = text
     # Return our dictonary
     return d
+
+
+def return_public_calls():
+    with open("calls.json", "r") as read_file:
+        calls = {}
+        call_data = json.loads(read_file.read())
+        # With the loaded json file and take the call answer time and convert it into a usable timestamp
+        for call in call_data:
+            date = parser.parse(call_data[call]["times"].get("callanswertime")).strftime("%m/%d/%Y")
+            # If we already have the timestamp in the call response just append the call
+            if calls.get(date):
+                calls[date].append(call_data[call]["incidenttype"])
+            # Just add the call if we don't already have it
+            else:
+                calls[date] = [call_data[call]["incidenttype"]]
+        return json.dumps(calls), 200
