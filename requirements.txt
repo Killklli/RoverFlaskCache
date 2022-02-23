@@ -1,1 +1,4 @@
 flask
+gunicorn
+bs4
+python-dateutil

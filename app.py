@@ -19,6 +19,11 @@ api_keys = os.environ["api_keys"]
 er_username = os.environ["er_username"]
 er_password = os.environ["er_password"]
 
+session = requests.Session()
+session.cookies.clear()
+# Log into Rover site
+login(username, password, session, rover_org)
+er_login(er_username, er_password, session)
 
 def authenticate(request):
     headers = request.headers
@@ -34,7 +39,7 @@ def authenticate(request):
 def stats():
     """Publically readable call stats."""
     if authenticate(request):
-        return return_public_calls()
+        return return_public_calls(update_calls(username, password, session, rover_org))
     return jsonify({"message": "ERROR: Unauthorized"}), 401
 
 
@@ -42,8 +47,7 @@ def stats():
 def data():
     """All usable call data."""
     if authenticate(request):
-        with open("calls.json", "r") as read_file:
-            return read_file.read(), 200
+        return update_calls(username, password, session, rover_org), 200
     return jsonify({"message": "ERROR: Unauthorized"}), 401
 
 
@@ -106,22 +110,3 @@ def edit_call_responders():
     # othernumberofpeople: 1
     pass
 
-
-if __name__ == "__main__":
-    # Log into Rover site
-    session = requests.Session()
-    session.cookies.clear()
-    login(username, password, session, rover_org)
-    er_login(er_username, er_password, session)
-
-    # Update the call stats every minute
-    def call_thread():
-        """Threaded function to call the Rover site every five minutes."""
-        while True:
-            update_calls(username, password, session, rover_org)
-            time.sleep(300)
-
-    threading.Thread(target=call_thread).start()
-
-    # Start flask
-    app.run()

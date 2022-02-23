@@ -43,15 +43,7 @@ def update_calls(username, password, session: requests.Session(), org):
             call_dict = etree_to_dict(ET.fromstring(str(call)))["roverdata"]
             all_calls[call_dict.get("incidentnumber")] = call_dict
 
-        # Verify the json file exists
-        if not os.path.exists("calls.json"):
-            with open("calls.json", "w") as writer:
-                writer.write("{}")
-
-        # Read our existing json file
-        with open("calls.json", "r") as read_file:
-            loaded_calls = json.loads(read_file.read())
-
+        loaded_calls = {}
         for call in all_calls:
             # Check if our call already exists
             if loaded_calls.get(call):
@@ -61,9 +53,7 @@ def update_calls(username, password, session: requests.Session(), org):
             # Else just append it cause we don't have it.
             else:
                 loaded_calls[call] = all_calls[call]
-        # Write the json data back to a file.
-        with open("calls.json", "w") as writer:
-            writer.write(json.dumps(loaded_calls))
+        return json.dumps(loaded_calls)
 
 
 def etree_to_dict(t):
@@ -94,17 +84,16 @@ def etree_to_dict(t):
     return d
 
 
-def return_public_calls():
-    with open("calls.json", "r") as read_file:
-        calls = {}
-        call_data = json.loads(read_file.read())
-        # With the loaded json file and take the call answer time and convert it into a usable timestamp
-        for call in call_data:
-            date = parser.parse(call_data[call]["times"].get("callanswertime")).strftime("%m/%d/%Y")
-            # If we already have the timestamp in the call response just append the call
-            if calls.get(date):
-                calls[date].append(call_data[call]["incidenttype"])
-            # Just add the call if we don't already have it
-            else:
-                calls[date] = [call_data[call]["incidenttype"]]
-        return json.dumps(calls), 200
+def return_public_calls(call_string):
+    calls = {}
+    call_data = json.loads(call_string)
+    # With the loaded json file and take the call answer time and convert it into a usable timestamp
+    for call in call_data:
+        date = parser.parse(call_data[call]["times"].get("callanswertime")).strftime("%m/%d/%Y")
+        # If we already have the timestamp in the call response just append the call
+        if calls.get(date):
+            calls[date].append(call_data[call]["incidenttype"])
+        # Just add the call if we don't already have it
+        else:
+            calls[date] = [call_data[call]["incidenttype"]]
+    return json.dumps(calls), 200
